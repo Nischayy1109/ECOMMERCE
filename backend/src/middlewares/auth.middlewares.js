@@ -52,7 +52,7 @@ export const verifyJWTforSeller=asyncHandler(async(req,res,next)=>{
 
 export const verifySeller=asyncHandler(async(req,res,next)=>{
 
-    if(!req.seller.isVerified) throw new ApiError(400,"Seller is not verified")
+    if(!req.seller.sellerVerified) throw new ApiError(400,"Seller is not verified")
     
     next();
 })

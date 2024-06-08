@@ -38,7 +38,7 @@ const sellerSchema=new mongoose.Schema({
         type:String,
         required:true
     },
-    sellerRefershToken:{
+    sellerRefreshToken:{
         type:String
     },
     sellerVerified:{

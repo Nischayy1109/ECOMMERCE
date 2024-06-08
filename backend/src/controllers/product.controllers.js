@@ -12,7 +12,7 @@ const createProduct = asyncHandler(async (req, res) => {
   const seller = await Seller.findById(sellerInfo);
   if (!seller) throw new ApiError(404, "Seller not found");
 
-  if (!seller.isVerified) throw new ApiError(404, "Seller is not verified");
+  if (!seller.sellerVerified) throw new ApiError(404, "Seller is not verified");
 
   const { name, description, price, stock, category } = req.body;
   if (!name) throw new ApiError(404, "Product name/title is required");
@@ -192,7 +192,7 @@ const getProducts = asyncHandler(async (req, res) => {
         stock: { $first: "$stock" },
         category: { $first: "$category" },
         sellerInfo: { $first: "$sellerInfo" },
-        productImages: { $push: "$productImages" }, // Push all productImages URLs into an array
+        productImages: { $first: "$productImages" }, // Push all productImages URLs into an array
       },
     },
     {
@@ -323,10 +323,10 @@ const getProductbyCategory = asyncHandler(async (req, res) => {
           name: { $first: "$name" },
           description: { $first: "$description" },
           price: { $first: "$price" },
-          quantityInStock: { $first: "$quantityInStock" },
-          ratings: { $first: "$ratings" },
+          stock: { $first: "$stock" },
+          //ratings: { $first: "$ratings" },
           sellerInfo: { $first: "$sellerInfo" },
-          productImage: { $first: "$productImage" },
+          productImages: { $first: "$productImages" },
         },
       },
       {
@@ -335,8 +335,8 @@ const getProductbyCategory = asyncHandler(async (req, res) => {
           name: 1,
           description: 1,
           price: 1,
-          quantityInStock: 1,
-          ratings: 1,
+          stock: 1,
+          //ratings: 1,
           category: {
             categoryName: "$category.category",
             categoryID: "$category._id",
@@ -346,7 +346,7 @@ const getProductbyCategory = asyncHandler(async (req, res) => {
             sellerID: "$sellerInfo._id",
             GSTNumber: "$sellerInfo.GSTnumber",
           },
-          productImage: 1,
+          productImages: 1,
         },
       },
     ];
@@ -428,7 +428,7 @@ const getAllProducts = asyncHandler(async(req,res)=>{
           }
       })
     }
-    
+
     if(sellerID){
       pipeline.unshift({
           $match: {
