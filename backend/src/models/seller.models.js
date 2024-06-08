@@ -1,6 +1,7 @@
 import mongoose from 'mongoose'
 import bcrypt from 'bcrypt'
 import jwt from "jsonwebtoken";
+import mongooseAggregatePaginate from "mongoose-aggregate-paginate-v2";
 
 const sellerSchema=new mongoose.Schema({
     sellerName:{
@@ -50,6 +51,10 @@ const sellerSchema=new mongoose.Schema({
         lowercase:true,
         index:true
     },
+    isVerified:{
+        type:Boolean,
+        default:false
+    }
 },
 {
     timestamps:true
