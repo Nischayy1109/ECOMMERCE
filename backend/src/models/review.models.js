@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import aggregatePaginate from "mongoose-aggregate-paginate-v2";
 
 const reviewSchema = new mongoose.Schema(
     {
@@ -19,7 +20,7 @@ const reviewSchema = new mongoose.Schema(
         rating: {
             type: Number,
             required: true,
-            maxVal: 5,
+            //maxVal: 5,
             enum: [1, 2, 3, 4, 5]
         },
         reviewDate: {
@@ -30,7 +31,7 @@ const reviewSchema = new mongoose.Schema(
             type: Boolean,
             default: false
         },
-        image: {
+        reviewImage: {
             type: String
         }
     },
@@ -39,4 +40,5 @@ const reviewSchema = new mongoose.Schema(
     }
 )
 
-const Review = mongoose.model("Review", reviewSchema)
+reviewSchema.plugin(aggregatePaginate);
+export const Review = mongoose.model("Review", reviewSchema)
