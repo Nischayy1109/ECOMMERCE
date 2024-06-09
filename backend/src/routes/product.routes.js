@@ -19,23 +19,27 @@ const router=Router();
 
 
 //getting the products
-router.route("/").get(getProducts);
-router.route("/p/:productId").get(getProductbyId);
-router.route("/category/:categoryId").get(getProductbyCategory)
-router.route("/admin").get(verifyJWT,verifyisAdmin,getAllProducts)
-router.route("/seller").get(verifyJWTforSeller,getProductbySeller)
+router.route("/").get(getProducts);//working
+router.route("/p/:productId").get(getProductbyId);//working
+router.route("/category/:categoryId").get(getProductbyCategory)//working
+router.route("/admin").get(
+    //verifyJWT,
+    //verifyisAdmin,
+    getAllProducts
+)//working
+router.route("/seller").get(verifyJWTforSeller,getProductbySeller)//working
 
 //creating the product
 router.route("/createProduct").post(
     verifyJWTforSeller,
     verifySeller,
-    upload.array("productImage",4),
+    upload.array('productImages',4),
     createProduct
-);
+);//working
 
 //updating and deleting the product
-router.route("/update/:productId").put(verifyJWTforSeller,updateProduct)
-router.route("/delete/:productId").delete(verifyJWTforSeller,deleteProduct)
+router.route("/update/:productId").put(verifyJWTforSeller,updateProduct)//working
+router.route("/delete/:productId").delete(verifyJWTforSeller,deleteProduct)//working
 
 
 export default router;

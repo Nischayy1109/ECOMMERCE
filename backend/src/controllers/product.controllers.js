@@ -4,6 +4,8 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { Product } from "../models/product.models.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
+import { Category } from '../models/category.models.js';
+import mongoose from "mongoose";
 
 const createProduct = asyncHandler(async (req, res) => {
   const sellerInfo = req.seller._id;
@@ -14,26 +16,36 @@ const createProduct = asyncHandler(async (req, res) => {
 
   if (!seller.sellerVerified) throw new ApiError(404, "Seller is not verified");
 
-  const { name, description, price, stock, category } = req.body;
+  let { name, description, price, stock, categoryName } = req.body;
+  //console.log(category)
   if (!name) throw new ApiError(404, "Product name/title is required");
   if (!description) throw new ApiError(404, "Product describtion is required");
   if (!price) throw new ApiError(404, "Product price should be specified");
   if (!stock) throw new ApiError(404, "Product stock should be specified");
-  if (!category) throw new ApiError(404, "Product category required");
+  if (!categoryName) throw new ApiError(404, "Product category required");
 
   price = parseInt(price);
   stock = parseInt(stock);
 
+  const category = await Category.findOne({name:categoryName})
+  if(!category) throw new ApiError(404,"No such category to add product to")
+  console.log('Request files:', req.files);
+  //console.log('Request files productimages:', req.files.fieldname);
+
   let productImageLocalPaths = [];
   if (
     req.files &&
-    Array.isArray(req.files.productImages) &&
-    req.files.productImages.length > 0
+    Array.isArray(req.files)
+     && req.files.length > 0
   ) {
-    productImageLocalPaths = req.files.productImages.map((file) => file.path);
+    productImageLocalPaths = req.files.map((file) => file.path);
+    if(!productImageLocalPaths) console.log('No local image paths found');
+    //console.log('Local image paths:', productImageLocalPaths);
+
   } else {
     throw new ApiError(404, "Images are required");
   }
+
 
   // Array to store Cloudinary URLs of uploaded images
   const productImagesUrls = [];
@@ -54,9 +66,10 @@ const createProduct = asyncHandler(async (req, res) => {
       price: price,
       stock: stock,
       productImages: productImagesUrls,
-      category,
+      categoryId:category._id,//not displaying category now displaying 
       sellerInfo,
     });
+    console.log(newProduct)
 
     res
       .status(200)
@@ -70,9 +83,9 @@ const updateProduct = asyncHandler(async (req, res) => {
   const { productId } = req.params;
   if (!productId) throw new ApiError(400, "Product id not specified");
 
-  let { name, description, price, stock, category } = req.body;
+  let { name, description, price, stock, categoryName } = req.body;
 
-  if (!name && !description && !price && !stock && !category)
+  if (!name && !description && !price && !stock && !categoryName)
     throw new ApiError(404, "No fields specified to update");
 
   const product = await Product.findById(productId);
@@ -89,7 +102,11 @@ const updateProduct = asyncHandler(async (req, res) => {
   if (description) updateFields.description = description;
   if (price) updateFields.price = price;
   if (stock) updateFields.stock = stock;
-  if (category) updateFields.category = category;
+  if (categoryName) {
+    const category = await Category.findOne({ name: categoryName });
+    if (!category) throw new ApiError(404, "Category not found");
+    updateFields.categoryId = category._id;
+  }
 
   // Update the product in the database
   const updatedProduct = await Product.findByIdAndUpdate(
@@ -139,51 +156,63 @@ const deleteProduct = asyncHandler(async (req, res) => {
 });
 
 const getProducts = asyncHandler(async (req, res) => {
-  const {
-    page = 1,
-    limit = 10,
-    sortBy = "_id",
-    sortType = "1",
-    minQuantity,
-    query,
-    category,
-  } = req.query;
+    const {
+      page = 1,
+      limit = 10,
+      sortBy = "_id",
+      sortType = "1",
+      minQuantity,
+      query,
+      category,
+    } = req.query;
 
-  const options = {
-    page: parseInt(page),
-    limit: parseInt(limit),
-    sort: { [sortBy]: parseInt(sortType) },
-  };
+    const options = {
+      page: parseInt(page),
+      limit: parseInt(limit),
+      sort: { [sortBy]: parseInt(sortType) },
+    };
 
-  const pipeline = [
-    {
-      $match: {
-        quantityInStock: { $gte: parseInt(minQuantity) || 0 },
-      },
-    },
-    {
+    const pipeline = [];
+
+    // Match stage for quantity in stock
+    if (minQuantity) {
+      pipeline.push({
+        $match: {
+          stock: { $gte: parseInt(minQuantity) || 0 },
+        },
+      });
+    }
+
+    // Lookup stage for category
+    pipeline.push({
       $lookup: {
         from: "categories",
-        localField: "category",
+        localField: "categoryId",
         foreignField: "_id",
         as: "category",
       },
-    },
-    {
+    });
+
+    pipeline.push({
       $unwind: "$category",
-    },
-    {
+    });
+
+    // Lookup stage for seller info
+    pipeline.push({
       $lookup: {
         from: "sellers",
         localField: "sellerInfo",
         foreignField: "_id",
         as: "sellerInfo",
       },
-    },
-    {
+    });
+
+    pipeline.push({
       $unwind: "$sellerInfo",
-    },
-    {
+    });
+
+    // Group stage to organize the data
+    pipeline.push({
       $group: {
         _id: "$_id",
         name: { $first: "$name" },
@@ -192,10 +221,12 @@ const getProducts = asyncHandler(async (req, res) => {
         stock: { $first: "$stock" },
         category: { $first: "$category" },
         sellerInfo: { $first: "$sellerInfo" },
-        productImages: { $first: "$productImages" }, // Push all productImages URLs into an array
+        productImages: { $first: "$productImages" },
       },
-    },
-    {
+    });
+
+    // Project stage to shape the final output
+    pipeline.push({
       $project: {
         _id: 1,
         name: 1,
@@ -203,51 +234,68 @@ const getProducts = asyncHandler(async (req, res) => {
         price: 1,
         stock: 1,
         category: {
-          categoryName: "$category.category",
+          categoryName: "$category.name",
           categoryID: "$category._id",
         },
         sellerInfo: {
-          sellerName: "$sellerInfo.fullName",
+          sellerName: "$sellerInfo.sellerName",
           sellerID: "$sellerInfo._id",
-          GSTNumber: "$sellerInfo.GSTnumber",
+          sellerGST: "$sellerInfo.sellerGST",
         },
         productImages: 1,
       },
-    },
-    {
-      $match: {
-        "category.categoryName": { $regex: category || "", $options: "ix" },
-      },
-    },
-  ];
-
-  if (query) {
-    pipeline.push({
-      $match: {
-        $or: [
-          {
-            description: { $regex: query || "", $options: "ix" },
-          },
-          {
-            name: { $regex: query || "", $options: "ix" },
-          },
-          {
-            "sellerInfo.sellerName": { $regex: query || "", $options: "ix" },
-          },
-        ],
-      },
     });
-  }
 
-  const aggregate = Product.aggregate(pipeline);
+    // Match stage for category filter
+    if (category) {
+      pipeline.push({
+        $match: {
+          "category.categoryName": { $regex: category, $options: "i" },
+        },
+      });
+    }
 
-  const products = await Product.aggregatePaginate(aggregate, options);
-  if (products.length === 0) {
-    throw new ApiError(404, "No products found");
-  }
+    // Match stage for query filter
+    if (query) {
+      pipeline.push({
+        $match: {
+          $or: [
+            {
+              description: { $regex: query, $options: "i" },
+            },
+            {
+              name: { $regex: query, $options: "i" },
+            },
+            {
+              "sellerInfo.sellerName": { $regex: query, $options: "i" },
+            },
+          ],
+        },
+      });
+    }
 
-  return res.status(200).json(new ApiResponse(200, products, "Products found"));
+    try {
+      const aggregate = Product.aggregate(pipeline);
+
+      // Log the pipeline for debugging purposes
+      //console.log("Pipeline:", JSON.stringify(pipeline, null, 2));
+
+      const products = await Product.aggregatePaginate(aggregate, options);
+
+      // Log the products for debugging purposes
+      //console.log("Products:", products);
+
+      if (!products.docs.length) {
+        throw new ApiError(404, "No products found");
+      }
+
+      res.json(new ApiResponse(200, products, "Products retrieved successfully"));
+    } catch (error) {
+      console.error("Error in getProducts:", error);
+      throw new ApiError(500, "Error in getting products");
+    }
 });
+
 
 const getProductbyId = asyncHandler(async (req, res) => {
   const { productId } = req.params;
@@ -255,8 +303,8 @@ const getProductbyId = asyncHandler(async (req, res) => {
 
   const product = await Product.findById(productId)
     .populate({
-      path: "category",
-      select: "category",
+      path: "categoryId",
+      select: "name",
     })
     .populate({
       path: "sellerInfo",
@@ -269,192 +317,223 @@ const getProductbyId = asyncHandler(async (req, res) => {
 });
 
 const getProductbyCategory = asyncHandler(async (req, res) => {
-    const { categoryId } = req.params;
+  const { categoryId } = req.params;
 
-    if (!categoryId) {
-      throw new ApiError(400, "Category is required");
-    }
+  if (!categoryId) {
+      throw new ApiError(400, "Category ID is required");
+  }
 
-    const {
+  const {
       page = 1,
       limit = 10,
       sortBy = "_id",
       sortType = "1",
       query,
-    } = req.query;
+  } = req.query;
 
-    const options = {
+  const options = {
       page: parseInt(page),
       limit: parseInt(limit),
       sort: { [sortBy]: parseInt(sortType) },
-    };
+  };
 
-    const pipeline = [
-      {
-        $match: {
-          category: new mongoose.Types.ObjectId(categoryId),
-        },
-      },
-      {
-        $lookup: {
-          from: "categories",
-          localField: "category",
-          foreignField: "_id",
-          as: "category",
-        },
-      },
-      {
-        $unwind: "$category",
-      },
-      {
-        $lookup: {
-          from: "sellers",
-          localField: "sellerInfo",
-          foreignField: "_id",
-          as: "sellerInfo",
-        },
-      },
-      {
-        $unwind: "$sellerInfo",
-      },
-      {
-        $group: {
-          _id: "$_id",
-          name: { $first: "$name" },
-          description: { $first: "$description" },
-          price: { $first: "$price" },
-          stock: { $first: "$stock" },
-          //ratings: { $first: "$ratings" },
-          sellerInfo: { $first: "$sellerInfo" },
-          productImages: { $first: "$productImages" },
-        },
-      },
-      {
-        $project: {
-          _id: 1,
-          name: 1,
-          description: 1,
-          price: 1,
-          stock: 1,
-          //ratings: 1,
-          category: {
-            categoryName: "$category.category",
-            categoryID: "$category._id",
-          },
-          sellerInfo: {
-            sellerName: "$sellerInfo.fullName",
-            sellerID: "$sellerInfo._id",
-            GSTNumber: "$sellerInfo.GSTnumber",
-          },
-          productImages: 1,
-        },
-      },
-    ];
+  // Log the received parameters
+  //console.log("Category ID:", categoryId);
+  //console.log("Query options:", options);
 
-    try {
+  const pipeline = [
+      {
+          $match: {
+              categoryId: new mongoose.Types.ObjectId(categoryId),
+              
+          },
+      },
+      {
+          $lookup: {
+              from: "categories",
+              localField: "categoryId",
+              foreignField: "_id",
+              as: "category",
+          },
+      },
+      {
+          $unwind: "$category",
+      },
+      {
+          $lookup: {
+              from: "sellers",
+              localField: "sellerInfo",
+              foreignField: "_id",
+              as: "sellerInfo",
+          },
+      },
+      {
+          $unwind: "$sellerInfo",
+      },
+      {
+          $group: {
+              _id: "$_id",
+              name: { $first: "$name" },
+              description: { $first: "$description" },
+              price: { $first: "$price" },
+              stock: { $first: "$stock" },
+              sellerInfo: { $first: "$sellerInfo" },
+              productImages: { $first: "$productImages" },
+              category:{$first:"$category"}
+          },
+      },
+      {
+          $project: {
+              _id: 1,
+              name: 1,
+              description: 1,
+              price: 1,
+              stock: 1,
+              category: {
+                  categoryName: "$category.name",
+                  categoryID: "$category._id",
+              },
+              sellerInfo: {
+                  sellerName: "$sellerInfo.sellerName",
+                  sellerID: "$sellerInfo._id",
+                  sellerGST: "$sellerInfo.sellerGST",
+              },
+              productImages: 1,
+          },
+      },
+  ];
+
+  try {
       const aggregate = Product.aggregate(pipeline);
+
+      // Log the pipeline to debug
+      //console.log("Aggregation Pipeline:", JSON.stringify(pipeline, null, 2));
+
       const products = await Product.aggregatePaginate(aggregate, options);
 
       if (products.docs.length === 0) {
-        throw new ApiError(404, "No products found with given category ID");
+          throw new ApiError(404, "No products found with given category ID");
       }
 
       res
-        .status(200)
-        .json(
-          new ApiResponse(
-            200,
-            products,
-            "Products found with given category ID"
-          )
-        );
-    } catch (error) {
-      next(error);
-    }
+          .status(200)
+          .json(
+              new ApiResponse(
+                  200,
+                  products,
+                  "Products found with given category ID"
+              )
+          );
+  } catch (error) {
+      console.error("Error in getProductbyCategory:", error);
+      throw new ApiError(500, "Error in getting products by category");
+  }
 });
 
 
-const getAllProducts = asyncHandler(async(req,res)=>{
-    const { page = 1, limit = 10, sortBy = "_id", sortType = "1", productId = "", sellerID = "", categoryID= "" } = req.query;
 
-    const options = {
-        page: parseInt(page),
-        limit: parseInt(limit),
-        sort: { [sortBy]: parseInt(sortType) }
-    };
+const getAllProducts = asyncHandler(async (req, res) => {
+  const { page = 1, limit = 10, sortBy = "_id", sortType = "1", productId = "", sellerID = "", categoryID = "" } = req.query;
 
-    const pipeline = [
-        {
-            $lookup: {
-                from: "categories",
-                localField: "category",
-                foreignField: "_id",
-                as: "category"
-            }
-        },
-        {
-            $unwind: "$category"
-        },
-        {
-            $lookup: {
-                from: "sellers",
-                localField: "sellerInfo",
-                foreignField: "_id",
-                as: "sellerInfo"
-            }
-        },
-        {
-            $unwind: "$sellerInfo"
-        },
-        {
-            $group: {
-                _id: "$_id",
-                name: { $first: "$name" },
-                description: { $first: "$description" },
-                price: { $first: "$price" },
-                stock: { $first: "$stock" },
-                category:{$first:"$category"},
-                sellerInfo: { $first: "$sellerInfo" },
-                sellerID: { $first: "$sellerInfo._id" },
-                productImages: { $first: "$productImages" }
-            }
-        },
-    ]
+  const options = {
+      page: parseInt(page),
+      limit: parseInt(limit),
+      sort: { [sortBy]: parseInt(sortType) }
+  };
 
-    if(productId){
+  const pipeline = [
+      {
+          $lookup: {
+              from: "categories",
+              localField: "categoryId",
+              foreignField: "_id",
+              as: "category"
+          }
+      },
+      {
+          $unwind: "$category"
+      },
+      {
+          $lookup: {
+              from: "sellers",
+              localField: "sellerInfo",
+              foreignField: "_id",
+              as: "sellerInfo"
+          }
+      },
+      {
+          $unwind: "$sellerInfo"
+      },
+      {
+          $group: {
+              _id: "$_id",
+              name: { $first: "$name" },
+              description: { $first: "$description" },
+              price: { $first: "$price" },
+              stock: { $first: "$stock" },
+              category: { $first: "$category" },
+              sellerInfo: { $first: "$sellerInfo" },
+              sellerID: { $first: "$sellerInfo._id" },
+              productImages: { $first: "$productImages" }
+          }
+      },
+  ];
+
+  if (productId) {
       pipeline.push({
           $match: {
-              _id: new mongoose.Types.ObjectId(productId)
+              _id: mongoose.Types.ObjectId(productId)
           }
       })
-    }
+  }
 
-    if(sellerID){
+  if (sellerID) {
       pipeline.unshift({
           $match: {
-              "sellerId": new mongoose.Types.ObjectId(sellerID)
+              "sellerId": mongoose.Types.ObjectId(sellerID)
           }
       })
-    }
+  }
 
-    if(categoryID){
+  if (categoryID) {
       pipeline.unshift({
           $match: {
-              "category._id": new mongoose.Types.ObjectId(categoryID)
+              "category._id": mongoose.Types.ObjectId(categoryID)
           }
       })
-    }
+  }
 
-    const aggregate = await Product.aggregate(pipeline);
-    const products = await Product.aggregatePaginate(aggregate, options);
+  // Apply pagination manually
+  const skip = (options.page - 1) * options.limit;
+  pipeline.push({ $skip: skip });
+  pipeline.push({ $limit: options.limit });
 
-    if(!products || products.length === 0){
-      throw new ApiError(404,"No products found")
-    }
+  try {
+      const aggregateResult = await Product.aggregate(pipeline);
+      const totalCount = await Product.aggregate([...pipeline, { $count: "totalCount" }]);
+      const totalDocs = totalCount.length > 0 ? totalCount[0].totalCount : 0;
 
-    return res.status(200).json(new ApiResponse(200,products,"Products found"));
+      const totalPages = Math.ceil(totalDocs / options.limit);
+      const hasNextPage = options.page < totalPages;
+      const hasPrevPage = options.page > 1;
 
+      return res.status(200).json({
+          success: true,
+          data: aggregateResult,
+          pagination: {
+              totalDocs,
+              totalPages,
+              hasNextPage,
+              hasPrevPage,
+              currentPage: options.page
+          }
+      });
+  } catch (error) {
+      console.error("Error in getAllProducts:", error);
+      throw new ApiError(500, "Error in getting products");
+  }
 });
+
 
 const getProductbySeller = asyncHandler(async (req, res) => {
   const sellerId = req.seller._id;
@@ -464,8 +543,8 @@ const getProductbySeller = asyncHandler(async (req, res) => {
 
   const products = await Product.find({ sellerInfo: sellerId })
     .populate({
-      path: "category",
-      select: "category",
+      path: "categoryId",
+      select: "name",
     })
     .select("-sellerInfo");
 
