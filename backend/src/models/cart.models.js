@@ -16,15 +16,20 @@ const cartSchema = new mongoose.Schema(
                 },
                 quantity: {
                     type: Number,
-                    required: true,
-                    //default:0
+                    required: true
+                    //check if the quantity is always less than the stock available
                 }
             }
-        ]
+        ],
+        discountValue: {
+            type: Number,
+            default: 0
+        }
     },
     {
         timestamps: true
     }
 )
+
 
 export const Cart = mongoose.model("Cart", cartSchema)
