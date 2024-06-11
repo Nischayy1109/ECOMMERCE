@@ -27,8 +27,12 @@ const paymentSchema = new mongoose.Schema({
         type:String,
         required:true,
         enum:["pending","completed","cancelled"],
+    },
+    transcationId:{
+        type:String,
+        required:true
     }
     
 })
 
-const Payment=mongoose.model("Payment",paymentSchema)
+export const Payment=mongoose.model("Payment",paymentSchema)

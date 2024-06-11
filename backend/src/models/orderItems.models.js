@@ -25,10 +25,15 @@ const orderItemsSchema = new mongoose.Schema(
             ref: "Seller",
             required: true
         },
+        userId:{
+            type:mongoose.Schema.Types.ObjectId,
+            ref:"User",
+            required:true
+        }
     },
     {
         timestamps: true
     }
 )
 
-const OrderItems=mongoose.model("OrderItems",orderItemsSchema)
+export const OrderItems=mongoose.model("OrderItems",orderItemsSchema)
