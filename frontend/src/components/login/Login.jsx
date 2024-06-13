@@ -17,13 +17,18 @@ const Login = () => {
     e.preventDefault();
 
     try {
-        await axios.post(
+        const response = await axios.post(
           '/api/v1/users/login',
           { email, password },
         );
+        const {isVerified}=response.data
         toast.success("Login Success!");
         await axios.get('/api/v1/users/verify-user')
-        navigate("/verify");
+        if(!isVerified){
+          navigate("/verify");
+        }
+        navigate("/");
+        
         window.location.reload(true); 
       } catch (err) {
         toast.error(err.response?.data?.message);
