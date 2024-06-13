@@ -190,6 +190,7 @@ const loginUser=asyncHandler(async(req,res)=>{
     .status(200)
     .cookie("accessToken",accessToken,options)
     .cookie("refreshToken",refreshToken,options)
+    .cookie("isVerified",loggedInUser.isVerified,options)
     .json(
         new ApiResponse(
             200,
