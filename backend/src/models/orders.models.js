@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import { aggregatePaginate } from 'mongoose-aggregate-paginate-v2';
+import  aggregatePaginate  from 'mongoose-aggregate-paginate-v2';
 
 const orderSchema = new mongoose.Schema(
     {

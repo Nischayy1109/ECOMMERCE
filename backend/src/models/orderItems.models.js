@@ -29,7 +29,12 @@ const orderItemsSchema = new mongoose.Schema(
             type:mongoose.Schema.Types.ObjectId,
             ref:"User",
             required:true
-        }
+        },
+        orderStatus:{
+            type:String,
+            default:"pending",
+            enum:["pending","shipped","dispatched","delivered","cancelled"],
+        },
     },
     {
         timestamps: true

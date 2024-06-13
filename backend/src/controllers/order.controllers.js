@@ -1,19 +1,20 @@
 import {asyncHandler} from '../utils/asyncHandler.js'
 import {ApiError} from '../utils/ApiError.js'
 import {ApiResponse} from '../utils/ApiResponse.js'
-import Order from '../models/orders.models.js'
+import {Order} from '../models/orders.models.js'
 import { OrderItems } from '../models/orderItems.models.js'
 
 const createOrder = asyncHandler(async (req, res) => {
-    const {total}=req.body;
+    const {orderId,total}=req.body;
 
-    if(!total){
+    if(!orderId || !total){
         res.status(400);
         throw new ApiError("All fields are required");
     }
 
     const userId=req.user._id;
     const createdOrder = await Order.create({
+        _id:orderId,
         total,
         //transactionId,
         userId:userId

@@ -27,6 +27,7 @@ import reviewRouter from "./routes/review.routes.js"
 import orderRouter from "./routes/orders.routes.js"
 import cartRouter from "./routes/cart.routes.js"
 import orderItemRouter from "./routes/orderItems.routes.js"
+import offerRouter from "./routes/offers.routes.js"
 
 app.use("/api/v1/users",userRouter)
 app.use("/api/v1/sellers",sellerRouter)
@@ -36,5 +37,6 @@ app.use("/api/v1/reviews",reviewRouter)
 app.use("/api/v1/orders",orderRouter)
 app.use("/api/v1/cart",cartRouter)
 app.use("/api/v1/orderItems",orderItemRouter)
+app.use("/api/v1/offers",offerRouter)
 
 export {app};
