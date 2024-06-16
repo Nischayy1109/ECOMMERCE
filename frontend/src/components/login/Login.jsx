@@ -1,39 +1,64 @@
-import {  useState } from "react";
+import { useState } from "react";
 import { AiOutlineEye, AiOutlineEyeInvisible } from "react-icons/ai";
-import styles from "../../styles/styles";
+import styles from "../../styles/styles.js";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
-//import { server } from "../../server";
 import "react-toastify/dist/ReactToastify.css";
 import { ToastContainer, toast } from "react-toastify";
+import { useDispatch } from "react-redux";
+import { login } from "../../store/slices/userSlice.js";
 
 const Login = () => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [visible, setVisible] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
+  
     try {
-        const response = await axios.post(
-          '/api/v1/users/login',
-          { email, password },
-        );
-        const {isVerified}=response.data
-        toast.success("Login Success!");
-        await axios.get('/api/v1/users/verify-user')
-        if(!isVerified){
+      const response = await axios.post(
+        '/api/v1/users/login',
+        { email, password },
+        { withCredentials: true }
+      );
+  
+      const resp = response.data;
+      const { isVerified } = resp.data.user;
+  
+      // Check cookies
+      const cookies = document.cookie.split(';').reduce((acc, cookie) => {
+        const [name, value] = cookie.split('=').map(c => c.trim());
+        acc[name] = value;
+        return acc;
+      }, {});
+  
+      const accessToken = cookies['accessToken'];
+      console.log('Access Token:', accessToken);
+  
+      toast.success("Login Success!");
+
+      dispatch(login(resp.data.user));
+  
+      if (!isVerified) {
+        try {
+          await axios.get('/api/v1/users/verify-user', { withCredentials: true });
           navigate("/verify");
+        } catch (verificationError) {
+          console.log(verificationError.response);
+          toast.error(verificationError.response?.data?.message || "Verification error occurred");
         }
+      } else {
         navigate("/");
-        
-        window.location.reload(true); 
-      } catch (err) {
-        toast.error(err.response?.data?.message);
-        }
-    };
+      }
+    } catch (err) {
+      console.log(err.response);
+      toast.error(err.response?.data?.message || "An error occurred");
+    }
+  };
+  
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
@@ -131,8 +156,8 @@ const Login = () => {
             </div>
             <div className={`${styles.noramlFlex} w-full`}>
               <h4>Not have any account?</h4>
-              <Link to="/sign-up" className="text-blue-600 pl-2">
-                Sign Up
+              <Link to="/register" className="text-blue-600 pl-2">
+                Register
               </Link>
             </div>
           </form>

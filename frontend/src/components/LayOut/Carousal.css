@@ -1,0 +1,32 @@
+.banner-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top;
+}
+
+.banner-gradient {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.3), rgba(255, 255, 255, 0.1));
+  z-index: 10;
+}
+
+.banner-text {
+  position: absolute;
+  bottom: 5%;
+  left: 5%;
+  color: #00bcd4;
+  font-size: 2rem;
+  font-weight: bold;
+  z-index: 20;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.banner-subtext {
+  font-size: 1.5rem;
+  text-align: left;
+}
