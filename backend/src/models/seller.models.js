@@ -51,10 +51,6 @@ const sellerSchema=new mongoose.Schema({
         lowercase:true,
         index:true
     },
-    isVerified:{
-        type:Boolean,
-        default:false
-    }
 },
 {
     timestamps:true

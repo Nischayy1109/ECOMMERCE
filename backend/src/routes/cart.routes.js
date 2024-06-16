@@ -1,6 +1,6 @@
 import {Router} from "express";
 import {verifyJWT} from "../middlewares/auth.middlewares.js";
-import { addToCart,clearCart,getCartValue,getUserCart, removeItemFromCart, updateCartItem,checkOutCart } from "../controllers/cart.controllers.js";
+import { addToCart,clearCart,getCartValue,getUserCart, removeItemFromCart, updateCartItem,checkOutCart,getCart } from "../controllers/cart.controllers.js";
 
 
 const router=Router();
@@ -15,5 +15,6 @@ router.route("/clear-cart").delete(verifyJWT,clearCart);//working
 router.route("/get-cart-value").get(verifyJWT,getCartValue);//working
 router.route("/checkout").get(verifyJWT,checkOutCart);//working
 
+router.route("/get-detailed-cart").get(verifyJWT,getCart);
 
 export default router;

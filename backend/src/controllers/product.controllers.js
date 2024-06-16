@@ -411,7 +411,7 @@ const getProductbyCategory = asyncHandler(async (req, res) => {
 
       const products = await Product.aggregatePaginate(aggregate, options);
 
-      if (products.docs.length === 0) {
+      if (products.length === 0) {
           throw new ApiError(404, "No products found with given category ID");
       }
 
@@ -557,6 +557,26 @@ const getProductbySeller = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, products, "Products found for seller"));
 });
 
+// Search products
+const searchProducts = async (req, res) => {
+  const { query } = req.query;
+  
+  try {
+    const products = await Product.find({
+      $or: [
+        { name: { $regex: query, $options: 'i' } },
+        { description: { $regex: query, $options: 'i' } }
+      ]
+    })
+    if(!products) throw new ApiError(404,"No products found");
+    res.status(200).json(new ApiResponse(200,products,"Product found"));
+  } catch (error) {
+    console.error("Error in searchProducts:", error);
+    throw new ApiError(500, "Error in getting products");
+  }
+};
+
+
 export {
   createProduct,
   updateProduct,
@@ -566,4 +586,5 @@ export {
   getProductbyCategory,
   getAllProducts,
   getProductbySeller,
+  searchProducts
 };
