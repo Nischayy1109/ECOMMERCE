@@ -2,6 +2,8 @@ import { Link } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useParams } from 'react-router-dom';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faShoppingCart } from '@fortawesome/free-solid-svg-icons';
 
 const ProductPage = () => {
   const { productId } = useParams();
@@ -14,6 +16,25 @@ const ProductPage = () => {
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState("");
   const [reviewImage, setReviewImage] = useState(null); // For handling file input
+  const [addedToCart, setAddedToCart] = useState(false);
+
+  const handleAddToCart = async () => {
+    try {
+      const response = await axios.post(`/api/v1/cart/addto-cart`, 
+        { productId: product._id },
+        { withCredentials: true }
+      );
+      
+      if (response.status === 201) {
+        // dispatch(addItem(product));
+        setAddedToCart(true);
+      } else {
+        console.error('Failed to add product to cart:', response.data);
+      }
+    } catch (error) {
+      console.error('Error adding product to cart:', error);
+    }
+  };
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -148,7 +169,15 @@ const ProductPage = () => {
               <span className="text-gray-600 ml-2">{averageRating.toFixed(1)} out of 5</span>
             </div>
             <p className="text-2xl font-bold mt-4">Rs {product.price}</p>
-            <button className="bg-blue-500 text-white font-bold py-2 px-4 rounded mt-4">Add to Cart</button>
+            {/* <button className="bg-blue-500 text-white font-bold py-2 px-4 rounded mt-4">Add to Cart</button> */}
+            {addedToCart ? (
+              <div className="added-to-cart">Added to Cart</div>
+            ) : (
+            
+              <button className="add-to-cart-button" onClick={handleAddToCart}>
+                <FontAwesomeIcon icon={faShoppingCart} /> Add to Cart
+              </button>
+            )}
           </div>
         </div>
 
