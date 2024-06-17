@@ -5,6 +5,14 @@ import { Product } from '../models/product.models.js';
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import {Review} from "../models/review.models.js"
 
+
+const updateProductRating = async (productId) => {
+    const reviews = await Review.find({ productId: productId });
+    const averageRating = reviews.reduce((acc, review) => acc + review.rating, 0) / reviews.length;
+    
+    await Product.findByIdAndUpdate(productId, { rating: averageRating });
+};
+
 const postReview = asyncHandler(async (req, res) => {
     const {productId} = req.params;
     const {comment, rating} = req.body;
@@ -38,6 +46,8 @@ const postReview = asyncHandler(async (req, res) => {
         rating,
         reviewImage:reviewImage?.url || ""
     })
+
+    await updateProductRating(productId);
 
     if(!review) throw new ApiError(500, "Error creating review")
     return res.status(201).json(new ApiResponse(201, review, "Review posted successfully"))
@@ -76,6 +86,8 @@ const updateReview = asyncHandler(async (req, res) => {
             throw new ApiError(500, "Error uploading image to Cloudinary");
         }
     }
+
+    await updateProductRating(review.productId);
 
     const updatedReview = await review.save({validateBeforeSave:false})
     if(!updatedReview) throw new ApiError(500, "Error updating review")
