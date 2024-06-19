@@ -15,7 +15,7 @@ const router = Router()
 router.route("/create").post(verifyJWT, createOrderItems)
 router.route("/:orderID").get(verifyJWT, getOrderItems)
 
-router.route("/seller").get(verifyJWT, getOrderBySellers)
+router.route("/seller/allorders").get(verifyJWTforSeller,getOrderBySellers)
 router.route("/status/:itemId").get(verifyJWT, getOrderItemById)
 router.route("/status/:orderItemId").put(verifyJWT, updateOrderStatus)
 

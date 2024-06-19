@@ -55,6 +55,7 @@ const verifyPayment=asyncHandler(async(req,res,next)=>{
     }
 
     const payment=await instance.payments.fetch(razorpay_payment_id);
+    console.log(payment)
 
     if(!payment){
         return next(new ApiError(400,"Payment not found"));
@@ -62,11 +63,13 @@ const verifyPayment=asyncHandler(async(req,res,next)=>{
 
     const newPayment=new Payment({
         orderId:payment.notes.orderId,
-        user:req.user._id,
+        userID:req.user._id,
         paymentMethod:payment.method,
         amount:payment.amount/100,
-        transactionId:razorpay_payment_id,
+        transactionId:payment.id,
     });
+
+    console.log("newwww",newPayment);
 
     if(!newPayment){
         return next(new ApiError(400,"Payment failed"));

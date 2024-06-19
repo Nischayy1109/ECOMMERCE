@@ -8,6 +8,7 @@ import { Order } from "../models/orders.models.js";
 const createOrderItems = asyncHandler(async(req,res)=>{
     const userId=req.user._id;
     const {orderID,productID,quantity,price,sellerID}=req.body;
+    console.log("orderitem",req.body)
 
     if(!orderID || !productID || !quantity || !price || !sellerID){
         throw new ApiError(400,"All fields are required");
@@ -61,7 +62,8 @@ const getOrderItems = asyncHandler(async(req,res)=>{
 })
 
 const getOrderBySellers = asyncHandler(async(req,res)=>{
-    const sellerID=req.user._id;
+    console.log("sellerrrr",req.seller)
+    const sellerID=req.seller._id;
     if(!sellerID) throw new ApiError(400,"You are not a seller");
     
     const {
@@ -167,6 +169,7 @@ const getOrderBySellers = asyncHandler(async(req,res)=>{
 
     const aggregate = OrderItems.aggregate(pipeline);
     const sellerOrders = await OrderItems.aggregatePaginate(aggregate,options);
+    console.log(sellerOrders)
 
     if(!sellerOrders){
         throw new ApiError(404,"Orders not found");

@@ -1,4 +1,6 @@
 import mongoose from "mongoose";
+//import aggregatePaginate from 'mongoose-aggregate-paginate-v2';
+import  aggregatePaginate  from 'mongoose-aggregate-paginate-v2';
 
 const orderItemsSchema = new mongoose.Schema(
     {
@@ -40,5 +42,7 @@ const orderItemsSchema = new mongoose.Schema(
         timestamps: true
     }
 )
+
+orderItemsSchema.plugin(aggregatePaginate);
 
 export const OrderItems=mongoose.model("OrderItems",orderItemsSchema)

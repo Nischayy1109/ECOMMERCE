@@ -23,12 +23,12 @@ const paymentSchema = new mongoose.Schema({
         type:Number,
         required:true
     },
-    paymentStatus:{
-        type:String,
-        required:true,
-        enum:["pending","completed","cancelled"],
-    },
-    transcationId:{
+    // paymentStatus:{
+    //     type:String,
+    //     required:true,
+    //     enum:["pending","completed","cancelled"],
+    // },
+    transactionId:{
         type:String,
         required:true
     }
