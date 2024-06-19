@@ -180,6 +180,7 @@ const getUserReviews = asyncHandler(async (req, res) => {
     ])
 
     const reviews = await Review.aggregatePaginate(aggregate, options)
+    //console.log(reviews);
     if(!reviews) throw new ApiError(404, "Reviews not found")
 
     return res.status(200).json(new ApiResponse(200, reviews, "Reviews fetched successfully"))

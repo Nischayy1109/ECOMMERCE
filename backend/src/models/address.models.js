@@ -7,16 +7,24 @@ const addressSchema = new mongoose.Schema(
             ref: "User",
             required: true
         },
-        address: {
+        addressLine1: {
             type: String,
             required: true
+        },
+        addressLine2: {
+            type: String,
+            //required: true
         },
         city: {
             type: String,
             required: true
         },
-        zipCode: {
+        zipcode: {
             type: Number,
+            required: true
+        },
+        state:{
+            type: String,
             required: true
         },
         country: {

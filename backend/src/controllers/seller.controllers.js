@@ -80,6 +80,7 @@ const registerSeller = asyncHandler(async (req, res) => {
 
 const sendVerificationEmailSeller = asyncHandler(async (req, res) => {
     const sellerID=req.seller._id;
+    console.log("selllll",sellerID);
     const seller=await Seller.findById(sellerID);
     console.log(seller);
     const otp = otpGenerator.generate(6, { upperCaseAlphabets: false, specialChars: false, lowerCaseAlphabets: false });
@@ -90,7 +91,7 @@ const sendVerificationEmailSeller = asyncHandler(async (req, res) => {
     // Send OTP via email
     const mailOptions = {
         from: process.env.EMAIL_USERNAME,
-        to: seller.email,
+        to: seller.sellerEmail,
         subject: 'Your OTP Code ',
         text: `Your OTP code to Verify your account is ${otp}`,
     };
@@ -107,6 +108,7 @@ const sendVerificationEmailSeller = asyncHandler(async (req, res) => {
 
 const verifyingSeller = asyncHandler(async (req, res) => {
     const {otp} = req.body;
+    console.log("otp",otp);
     const sellerId = req.seller._id;
 
     // Decode the OTP from the cookie
@@ -130,9 +132,9 @@ const verifyingSeller = asyncHandler(async (req, res) => {
     
     const seller = await Seller.findById(sellerId);
     if (!seller) {
-        throw new ApiError(404, 'Seller not found');
+        throw new ApiError(404, 'seller not found');
     }
-    seller.sellerVerified= true;
+    seller.sellerVerified = true;
     await seller.save();
 
     res.clearCookie('otp');
@@ -140,7 +142,6 @@ const verifyingSeller = asyncHandler(async (req, res) => {
     res.status(200).json(new ApiResponse(200, {}, 'Seller verified successfully'));
 
 });
-
 const loginSeller = asyncHandler(async (req, res) => {
     const {sellerEmail,sellerUsername,sellerPassword}=req.body;
 
@@ -162,13 +163,14 @@ const loginSeller = asyncHandler(async (req, res) => {
         throw new ApiError(401,"Incorrect password")
     }
     const {accessToken, refreshToken}=await generateAccessAndRefreshTokens(seller._id);
-
+    console.log("accesstoken",accessToken,"refreshToken",refreshToken)
     const loggedInSeller=await Seller.findById(seller._id).select("-sellerPassword -sellerRefreshToken");
 
     return res
     .status(200)
     .cookie("accessToken",accessToken,options)
     .cookie("refreshToken",refreshToken,options)
+    .cookie("sellerVerified",loggedInSeller.sellerVerified,options)
     .json(
         new ApiResponse(
             200,
@@ -247,7 +249,10 @@ const refreshAccessToken=asyncHandler(async(req,res)=>{
 })
 
 const getCurrentSeller = asyncHandler(async (req, res) => {
-    return res.status(200).json(new ApiResponse(200,req.seller,"current seller fetched successfully"))
+    const seller = await Seller.findById(req.seller._id).select("-sellerPassword -sellerRefreshToken");
+    console.log("SLLL",seller)
+    return res.status(200).json(new ApiResponse(200,seller,"current seller fetched successfully"))
+    
 })
 
 const changeCurrentPassword=asyncHandler(async(req,res)=>{

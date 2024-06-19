@@ -28,27 +28,33 @@ export const verifyJWT=asyncHandler(async(req,res,next)=>{
 
 })
 
-export const verifyJWTforSeller=asyncHandler(async(req,res,next)=>{
+export const verifyJWTforSeller = asyncHandler(async (req, res, next) => {
     try {
-        const token = req.cookies?.accessToken||req.header("Authorization")?.replace("Bearer","")
-        if(!token){
-            throw new ApiError(401,"Unauthorized Request")
-        }
-    
-        const decodedToken = jwt.verify(token,process.env.ACCESS_TOKEN_SECRET)
-    
-        const seller = await Seller.findById(decodedToken?._id).select("-password -refreshToken")
-    
-        if(!seller){
-            throw new ApiError(401,"Invalid access token")
-        }
-    
-        req.seller=seller;
-        next()
+        console.log("cookies",req.cookies.accessToken)
+      const token =
+        req.cookies?.accessToken ||
+        req.header("Authorization")?.replace("Bearer ", "").trim();
+  
+      console.log("Token:", token); // Debugging: log the token to ensure it's being extracted
+  
+      if (!token) {
+        throw new ApiError(401, "Unauthorized Request");
+      }
+  
+      const decodedToken = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
+  
+      const seller = await Seller.findById(decodedToken?._id).select("-password -refreshToken");
+  
+      if (!seller) {
+        throw new ApiError(401, "Invalid access token");
+      }
+  
+      req.seller = seller;
+      next();
     } catch (error) {
-        throw new ApiError(401,error?.message || "Invalid access token")
+      throw new ApiError(401, error?.message || "Invalid access token");
     }
-})
+  });
 
 export const verifySeller=asyncHandler(async(req,res,next)=>{
 

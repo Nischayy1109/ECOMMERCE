@@ -392,7 +392,7 @@ const updateCoverImage=asyncHandler(async(req,res)=>{
         throw new ApiError(404, "User not found");
     }
     let coverImage="";
-    console.log(req.file);
+    console.log("file",req.file);
     if(req.file){
         try {
             coverImage=await uploadOnCloudinary(req.file.path)
