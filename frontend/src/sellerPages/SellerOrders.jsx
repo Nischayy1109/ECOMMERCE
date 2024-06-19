@@ -9,7 +9,9 @@ const SellerOrders = () => {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const response = await axios.get('http://localhost:8000/api/v1/seller/allorders');
+                const response = await axios.get('http://localhost:8000/api/v1/orderItems/seller/allorders', {
+                    withCredentials: true
+                });
                 console.log('Orders:', response.data.data);
                 setOrders(response.data.data); 
                 setLoading(false);
@@ -81,7 +83,7 @@ const SellerOrders = () => {
                             </tr>
                         </thead>
                         <tbody>
-                            {orders.map(order => (
+                            {orders.docs.map(order => (
                                 <tr key={order._id} className="hover:bg-gray-50">
                                     <td className="px-5 py-5 border-b border-gray-200 bg-white text-sm">
                                         <div className="flex items-center">

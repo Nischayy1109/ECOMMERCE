@@ -133,12 +133,12 @@ function OrderConfirmationn() {
     }
   };
 
-  const createOrderBackend = async (transactionId) => {
+  const createOrderBackend = async (transactionId,orderId) => {
       const response = await axios.post(
-        "/api/v1/orders/create",
+        "http://localhost:8000/api/v1/orders/createOrder",
         {
-          orderId: checkCartData.orderId,
-          address: selectedAddress._id,
+          orderId: orderId,
+          //address: selectedAddress._id,
           transactionId,
           total: resultant,
         },
@@ -150,13 +150,14 @@ function OrderConfirmationn() {
   };
 
   const createOrderItemsBackend = async (orderId) => {
-      cart.forEach(async (item) => {
+    cart.forEach(async (item) => {
+        console.log("iiiii",item);
         const response = await axios.post(
-          "/api/v1/orderItems/create",
+          "http://localhost:8000/api/v1/orderItems/create",
           {
             orderID: orderId,
-            productID: item.details.productId,
-            sellerInfo: item.details.sellerInfo,
+            productID: item.productId,
+            sellerID: item.details.sellerInfo,
             quantity: item.quantity,
             price: item.details.price * item.quantity,
           },
@@ -220,7 +221,7 @@ function OrderConfirmationn() {
           console.log("JsonRes", jsonRes);
 
           // Logic to create Order
-          createOrderBackend(jsonRes.data.transactionId);
+          createOrderBackend(jsonRes.data.newPayment.transactionId,orderIdMongoose);
           createOrderItemsBackend(orderIdMongoose);
           emptyCartBackend();
 
