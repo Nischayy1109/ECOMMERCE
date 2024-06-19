@@ -78,6 +78,21 @@ function CheckOut() {
     setSubtotal(calculateSubtotal());
   }, [cart, handleEmptyCartClick]);
 
+  // const handlePlaceOrder = async () => {
+  //   try {
+  //     const response = await axios.get(`/api/v1/cart/checkout`, {
+  //       withCredentials: true,
+  //     });
+  //     const orderId = response.data.data;
+  //     navigate("/order-confirmation", {
+  //       state: { orderId, subtotal, cart },
+  //     });
+  //   } catch (error) {
+  //     console.error("Failed to place order:", error);
+  //     // Handle error, show error message to user
+  //   }
+  // };
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 min-h-screen m-4">
       {/* Left Portion - Products */}
@@ -119,7 +134,8 @@ function CheckOut() {
         <button
           className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md text-lg mb-4 disabled:cursor-not-allowed disabled:bg-gray-400 disabled:opacity-50"
           disabled={cart.length === 0}
-          onClick={() => navigate("/user/order-confirmation")}
+          onClick={() => navigate("/order-confirmation")}
+          //{handlePlaceOrder}
         >
           Place Order
         </button>
